@@ -166,10 +166,10 @@ def get_site_instance(site_url):
         for key, value in itemprop_dict.items():
             temp_info = info_listing_parent.find('span', itemprop=value)
             if temp_info is None:
-                temp_info = f'no ' + key
+                temp_info = f'no {key}'
             else:
                 temp_info = temp_info.get_text().strip() if \
-                    temp_info.get_text().strip() != '' else f'no ' + key
+                    temp_info.get_text().strip() != '' else f'no {key}'
             item_dict[key] = temp_info
 
         item_dict['address'] = item_dict['address'] +\
