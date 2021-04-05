@@ -147,29 +147,36 @@ def get_site_instance(site_url):
         site_listing_parent = soup.find('div',
                 class_="Hero-titleContainer clearfix")
         park_name_info = site_listing_parent.find('a').get_text().strip()
+        CACHE_DICT[site_url]  = {'name': park_name_info,
+                                'category': 'no category',
+                                'address': 'no address',
+                                'zipcode': 'no zipcode',
+                                'phone': 'no phone'}
         category_info = site_listing_parent.find('span',
                                 class_="Hero-designation").get_text().strip()
-        category_info = category_info if category_info != '' \
-                            else 'no category'
+        CACHE_DICT[site_url]['category'] = category_info \
+                                    if category_info != '' else 'no category'
         info_listing_parent = soup.find('div', class_='vcard')
-        address_info = info_listing_parent.find('span',
-                            itemprop='addressLocality').get_text().strip()
-        address_info = address_info if address_info != '' else 'no address'
-        state_info = info_listing_parent.find('span',
-                                itemprop='addressRegion').get_text().strip()
-        state_info = state_info if state_info != '' else 'no state'
-        address = address_info + ", " + state_info
-        postal_info = info_listing_parent.find('span',
-                                itemprop='postalCode').get_text().strip()
-        postal_info = postal_info if postal_info != '' else 'no zipcode'
-        phone_info = info_listing_parent.find('span',
-                                itemprop='telephone').get_text().strip()
-        phone_info = phone_info if phone_info != '' else 'no phone'
-        CACHE_DICT[site_url] = {'name': park_name_info,
-                                'category': category_info,
-                                'address': address,
-                                'zipcode': postal_info,
-                                'phone': phone_info}
+
+        itemprop_dict = {'address': 'addressLocality',
+                            'state': 'addressRegion',
+                            'zipcode': 'postalCode',
+                            'phone': 'telephone'}
+        item_dict = {}
+        for key, value in itemprop_dict.items():
+            temp_info = info_listing_parent.find('span', itemprop=value)
+            if temp_info is None:
+                temp_info = f'no ' + key
+            else:
+                temp_info = temp_info.get_text().strip() if \
+                    temp_info.get_text().strip() != '' else f'no ' + key
+            item_dict[key] = temp_info
+
+        item_dict['address'] = item_dict['address'] +\
+                                    ', ' + item_dict['state']
+        CACHE_DICT[site_url]['address'] = item_dict['address']
+        CACHE_DICT[site_url]['zipcode'] = item_dict['zipcode']
+        CACHE_DICT[site_url]['phone'] = item_dict['phone']
     else:
         print("Using cache")
 
@@ -318,8 +325,14 @@ if __name__ == "__main__":
                 if number.isdecimal() and \
                     (1 <= int(number) <= len(nationalsite_list)):
                     national_site = nationalsite_list[int(number)-1]
-                    nearby_places = get_nearby_places(national_site)
-                    print_nearby_places(nearby_places, national_site.name)
+                    if national_site.zipcode == 'no zipcode':
+                        print("[ERROR] The place doesn't have zipcode")
+                        print()
+                        print('-' * 34)
+                        continue
+                    else:
+                        nearby_places = get_nearby_places(national_site)
+                        print_nearby_places(nearby_places, national_site.name)
                 elif number == 'exit':
                     program_flag = False
                     print('Bye!')
